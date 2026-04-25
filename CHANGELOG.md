@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to {{PROJECT_NAME}} will be documented here.
+All notable changes to LIKAS will be documented here.
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [SemVer](https://semver.org/spec/v2.0.0.html).
@@ -18,7 +18,7 @@ Categories: **Added**, **Changed**, **Deprecated**, **Removed**, **Fixed**, **Se
 ### Fixed
 - (nothing yet)
 
-## [0.1.0] — {{CURRENT_DATE}}
+## [0.1.0] — April 25, 2026
 
 Initial scaffold. No runtime code — establishes the docs and structure
 Claude Code needs to work effectively in this repo.
@@ -30,5 +30,5 @@ Claude Code needs to work effectively in this repo.
 - `README.md`, `docs/workflow.md`, `docs/architecture.md`.
 - `.gitignore`, `CHANGELOG.md`.
 
-[Unreleased]: https://github.com/<org>/{{PROJECT_NAME}}/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/<org>/{{PROJECT_NAME}}/releases/tag/v0.1.0
+[Unreleased]: https://github.com/ytap1/Licas/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/ytap1/Licas/releases/tag/v0.1.0

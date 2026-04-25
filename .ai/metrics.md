@@ -1,4 +1,4 @@
-# Metrics: {{PROJECT_NAME}}
+# Metrics: LIKAS
 
 Track AI-assisted work so later you can tell what actually helped.
 Add a row per meaningful session ("meaningful" = code shipped, not
@@ -15,9 +15,9 @@ Add a row per meaningful session ("meaningful" = code shipped, not
 
 ## Log
 
-| Date             | Feature                  | Sessions | Tokens | Bugs Found | Notes                                |
-|------------------|--------------------------|----------|--------|------------|--------------------------------------|
-| {{CURRENT_DATE}} | repo scaffolding (.ai/*) | 1        | ~12k   | 0          | Initial template. No app code yet.   |
+| Date       | Feature                  | Sessions | Tokens | Bugs Found | Notes                                |
+|------------|--------------------------|----------|--------|------------|--------------------------------------|
+| 2026-04-25 | repo scaffolding (.ai/*) | 1        | ~12k   | 0          | Initial template. No app code yet.   |
 
 ## Rollups (update weekly)
 

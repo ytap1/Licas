@@ -1,4 +1,4 @@
-# Decisions: {{PROJECT_NAME}}
+# Decisions: LIKAS
 
 Append-only log of architectural and technical decisions. Each entry
 answers: what did we pick, what did we reject, and why?
@@ -8,35 +8,11 @@ answers: what did we pick, what did we reject, and why?
 - **Keep entries short.** Link out if it needs more than a page.
 - **Number sequentially** (ADR-0001, ADR-0002, ...).
 
-## Template
-
-```markdown
-## ADR-NNNN: <short title>
-
-- **Date:** YYYY-MM-DD
-- **Status:** Proposed | Accepted | Superseded by ADR-XXXX | Deprecated
-
-### Context
-<problem and forces, 2–5 sentences>
-
-### Decision
-<the choice, 1–2 sentences>
-
-### Alternatives Considered
-- **Option A:** why rejected.
-- **Option B:** why rejected.
-
-### Consequences
-- **Positive:** <what gets easier>
-- **Negative:** <what gets harder>
-- **Follow-ups:** <what this unlocks or requires next>
-```
-
 ---
 
 ## ADR-0001: Push directly to `main`; branch only for destructive changes
 
-- **Date:** {{CURRENT_DATE}}
+- **Date:** April 25, 2026
 - **Status:** Accepted
 
 ### Context

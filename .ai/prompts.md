@@ -1,4 +1,4 @@
-# Prompts: {{PROJECT_NAME}}
+# Prompts: LIKAS
 
 Copy-paste templates for common Claude sessions. Fill the `<...>` slots
 before pasting. Edit as the project matures.
