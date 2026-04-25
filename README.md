@@ -1,12 +1,12 @@
-# {{PROJECT_NAME}}
+# LIKAS
 
-> {{PROJECT_DESCRIPTION}}
+> Offline-first disaster intelligence Streamlit app for Philippine DRRM officers powered by Gemma 4. LIKAS means "to evacuate" and "natural" in Filipino.
 
 ## Status
 
 - **Phase:** pre-alpha
 - **Version:** 0.1.0 (see [CHANGELOG.md](./CHANGELOG.md))
-- **Last updated:** {{CURRENT_DATE}}
+- **Last updated:** April 25, 2026
 - **Deployed?** No.
 
 ## How Work Happens Here
@@ -14,22 +14,23 @@
 - Edits via Claude Code (GitHub integration) or the GitHub web editor on Safari.
 - No local dev, no terminal, no package managers — never assume them.
 - Push directly to `main` by default. Branch only for destructive or high-risk changes.
-- Deploy is auto-triggered on push to `main` (GitHub Pages or Netlify, per project).
+- Deploy is auto-triggered on push to `main` (Streamlit Community Cloud).
 - Verification happens on the deployed preview, not on a localhost.
 
 See [docs/workflow.md](./docs/workflow.md) for the full working model.
 
 ## What Works
 
-- AI-first docs in [`.ai/`](./.ai/).
+- AI-first docs in [`.ai/`](./.ai/) — fully filled in for LIKAS.
 - `CHANGELOG.md`, `docs/`, `.gitignore` scaffolding.
-
-Replace this with real shipped features as they land.
 
 ## What's Next
 
-- [ ] Pick the stack and fill in `.ai/context.md` (`{{TECH_STACK}}`).
-- [ ] First end-to-end feature slice, deployed.
+- [ ] Build `app.py` — Streamlit UI with flood-data input form.
+- [ ] Wire Gemma 4 via Google AI Studio API.
+- [ ] Bilingual (Filipino/English) alert generation.
+- [ ] Safe route recommendation panel.
+- [ ] Deploy to Streamlit Community Cloud.
 
 ## Documentation
 

@@ -1,4 +1,4 @@
-# Workflow: {{PROJECT_NAME}}
+# Workflow: LIKAS
 
 How work actually happens on this project. If a future doc contradicts
 this file, this file wins.

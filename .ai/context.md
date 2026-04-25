@@ -1,68 +1,47 @@
-# Context: {{PROJECT_NAME}}
+# Context: LIKAS
 
 > Single source of truth Claude reads at the start of every session.
 > Keep under ~150 lines. Link out instead of inlining.
 
-Last updated: {{CURRENT_DATE}}
+Last updated: April 25, 2026
 
 ## What This Is
 
-{{PROJECT_NAME}} is {{PROJECT_DESCRIPTION}}.
+LIKAS is an offline-first disaster intelligence Streamlit app for Philippine
+DRRM officers powered by Gemma 4. LIKAS means "to evacuate" and "natural"
+in Filipino.
 
-Answer in one sentence each:
-
-- **Problem:** <what specific pain this solves>
-- **User:** <who uses it>
-- **Success:** <observable outcome that means it works>
+- **Problem:** Philippine DRRM officers lack real-time AI-assisted flood analysis and bilingual (Filipino/English) evacuation alerts during disaster events.
+- **User:** DRRM officers in Philippine local government units.
+- **Success:** Officer generates a flood situation analysis and bilingual evacuation alert within 60 seconds from a single Streamlit interface.
 
 ## Current State
 
-- **Phase:** pre-alpha / alpha / beta / production (pick one)
+- **Phase:** pre-alpha
 - **Version:** 0.1.0
-- **Deployed?** No / URL
-- **Users?** None / count
-- **Known broken:** <list load-bearing things that fail>
+- **Deployed?** No
+- **Users?** None
+- **Known broken:** App not yet built — no source files exist.
 
 ## Stack
 
-{{TECH_STACK}}
-
-Fill in once chosen. Do not assume a stack — this template is intentionally
-neutral. List only what is actually picked: language, framework, storage,
-deploy target.
-
-## Working Model
-
-Hard rules about how work happens here. Do not violate without asking.
-
-- **No local execution.** The user works from iPad/iPhone via Safari + Claude
-  Code. There is no terminal, no `make`, no `npm`, no `curl localhost`.
-- **No CLI instructions in docs.** If a step needs a command, it has to run
-  in CI or in Claude Code's own sandbox — never on the user's machine.
-- **Push directly to `main`** by default. Branch only for destructive or
-  high-risk changes (schema rewrites, mass renames, deletions).
-- **Deploy is automatic** on push to `main` (GitHub Pages or Netlify).
-  Verification happens on the deployed preview, not localhost.
-- **Multi-chat workflow.** The user maintains separate Claude chats per
-  concern (e.g. App Dev, Prompt Refinement). Stay in the lane named in
-  the current chat unless told otherwise.
+Python · Streamlit · Streamlit Community Cloud · Google AI Studio API (Gemma 4)
 
 ## Key Constraints
 
-Project-specific rules. Edit per project.
-
-- <e.g. "Single HTML file — no build step.">
-- <e.g. "No new top-level dependencies without an ADR.">
-- <e.g. "Secrets only via Netlify env vars, never committed.">
+- Single `app.py` entry point; no build step.
+- API key via Streamlit secrets (`.streamlit/secrets.toml`) — never committed.
+- All AI responses must be bilingual: Filipino and English.
+- API unavailable → display error banner; no silent fallback.
+- No local-dev assumption — verify only on Streamlit Community Cloud deploy preview.
+- No new top-level Python dependencies without an ADR.
 
 ## Entry Points
 
-Where Claude should start reading when picking up cold. Links, not commands.
-
-- **Main file(s):** <path(s)>
-- **Config:** <path>
-- **Tests (if any):** <path>
-- **Deploy config:** <path, e.g. `netlify.toml` / `.github/workflows/pages.yml`>
+- **Main file:** `app.py` (does not exist yet — first file to create)
+- **Config:** `.streamlit/secrets.toml` (not committed; set in Streamlit Community Cloud dashboard)
+- **Tests:** none yet
+- **Deploy config:** Streamlit Community Cloud connected to GitHub `main`
 
 ## See Also
 

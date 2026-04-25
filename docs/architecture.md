@@ -1,27 +1,26 @@
-# Architecture: {{PROJECT_NAME}}
+# Architecture: LIKAS
 
 How the pieces fit together. Keep in sync with the code — stale
 architecture docs are worse than none.
 
 ## Directory Structure
 
-Fill this in once the stack is picked. Skeleton:
-
 ```
-{{PROJECT_NAME}}/
-├── CLAUDE.md                 # Claude Code reads this first
-├── .ai/                      # AI-first context
+LIKAS/
+├── CLAUDE.md
+├── .ai/
 │   ├── context.md
 │   ├── conventions.md
 │   ├── decisions.md
 │   ├── prompts.md
 │   └── metrics.md
+├── .streamlit/
+│   └── secrets.toml          # never committed; set in dashboard
 ├── docs/
-│   ├── workflow.md           # how work happens (no terminal)
-│   └── architecture.md       # this file
-├── <source files>            # depends on stack
-├── <tests, if any>
-├── <deploy config>           # netlify.toml / .github/workflows/pages.yml / etc.
+│   ├── workflow.md
+│   └── architecture.md
+├── app.py                    # Streamlit entry point (not yet created)
+├── requirements.txt          # not yet created
 ├── .gitignore
 ├── CHANGELOG.md
 └── README.md
@@ -31,11 +30,11 @@ When a top-level directory is added, update this tree in the same commit.
 
 ## Data Flow
 
-Describe the one path a typical request/interaction takes through the
-system. Keep it small enough to read at a glance.
-
 ```
-<fill in once the stack and shape are decided>
+User (Safari) → Streamlit UI (app.py)
+             → Google AI Studio API (Gemma 4)
+             ← bilingual AI response (Filipino + English)
+             → Streamlit renders alert + route recommendation
 ```
 
 ## Key Design Principles
@@ -52,12 +51,9 @@ system. Keep it small enough to read at a glance.
 
 ## External Dependencies
 
-Every outbound call the app makes. Each one is a failure mode. Fill in
-when there is anything to list.
-
-| Dependency | Purpose | Timeout | Retry? | Failure mode |
-|------------|---------|---------|--------|--------------|
-| <name>     | <why>   | <ms>    | <y/n>  | <behavior>   |
+| Dependency          | Purpose                                            | Timeout  | Retry?              | Failure mode                          |
+|---------------------|----------------------------------------------------|----------|---------------------|---------------------------------------|
+| Google AI Studio    | Gemma 4 flood analysis + bilingual alert generation | 30 000 ms | No (user-triggered) | Show error banner; officer retries manually |
 
 Rules:
 
