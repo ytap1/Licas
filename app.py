@@ -708,3 +708,134 @@ OFFLINE_FALLBACKS = {
         ],
     },
 }
+
+# ── Agentic loop (online) ─────────────────────────────────────────────────────
+
+def run_online(scenario, photo_description, api_key):
+    context = build_context(scenario, photo_description)
+    messages = [{"role": "user", "parts": [{"text": SYSTEM_PROMPT + "\n\n" + context}]}]
+    function_call_log = []
+    final_text = ""
+
+    for _ in range(MAX_ITERATIONS):
+        payload = {
+            "contents": messages,
+            "tools": TOOLS,
+            "generationConfig": {"temperature": 0.2, "maxOutputTokens": 2048},
+        }
+        response = requests.post(
+            f"{GEMINI_API_URL}?key={api_key}",
+            json=payload,
+            timeout=30,
+        )
+        response.raise_for_status()
+        data = response.json()
+        candidate = data["candidates"][0]["content"]
+        messages.append({"role": "model", "parts": candidate["parts"]})
+
+        fn_calls = [p for p in candidate["parts"] if "functionCall" in p]
+        if not fn_calls:
+            for part in candidate["parts"]:
+                if "text" in part:
+                    final_text += part["text"]
+            break
+
+        tool_results = []
+        for part in fn_calls:
+            fc = part["functionCall"]
+            result_data = dispatch(fc["name"], fc.get("args", {}))
+            function_call_log.append({
+                "function": fc["name"],
+                "args": fc.get("args", {}),
+                "result": result_data,
+            })
+            tool_results.append({
+                "functionResponse": {
+                    "name": fc["name"],
+                    "response": {"result": result_data},
+                }
+            })
+        messages.append({"role": "user", "parts": tool_results})
+
+    return {"mode": "ONLINE", "reasoning": final_text, "function_call_log": function_call_log}
+
+# ── run_analysis ──────────────────────────────────────────────────────────────
+
+def run_analysis(scenario, photo_description, mode, api_key):
+    scenario_id = scenario["label"][9]  # extracts "A", "B", or "C"
+
+    if mode == "🔴 Simulate Offline Mode" or not api_key:
+        fallback = OFFLINE_FALLBACKS[scenario_id]
+        return {
+            "mode": "OFFLINE (Simulated)",
+            "reasoning": fallback["reasoning"],
+            "alert_level": fallback["alert_level"],
+            "function_call_log": fallback["function_call_log"],
+        }
+
+    if not is_online():
+        st.warning("⚠️ No internet detected. Running offline simulation.")
+        fallback = OFFLINE_FALLBACKS[scenario_id]
+        return {
+            "mode": "OFFLINE (Auto-detected)",
+            "reasoning": fallback["reasoning"],
+            "alert_level": fallback["alert_level"],
+            "function_call_log": fallback["function_call_log"],
+        }
+
+    return run_online(scenario, photo_description, api_key)
+
+# ── Alert color helper ────────────────────────────────────────────────────────
+
+def alert_color(level):
+    return {
+        "ADVISORY": "🟡",
+        "WATCH": "🟠",
+        "WARNING": "🔴",
+        "CRITICAL": "🚨",
+    }.get(level, "⚠️")
+
+# ── Result extraction helpers ─────────────────────────────────────────────────
+
+def get_highest_alert(function_call_log):
+    order = ["ADVISORY", "WATCH", "WARNING", "CRITICAL"]
+    highest = None
+    for call in function_call_log:
+        if call["function"] == "broadcast_alert":
+            level = call["args"].get("alert_level", "ADVISORY")
+            if highest is None or order.index(level) > order.index(highest):
+                highest = level
+    return highest or "ADVISORY"
+
+
+def get_broadcast_messages(function_call_log):
+    return [
+        {
+            "english": c["args"].get("message_english", ""),
+            "tagalog": c["args"].get("message_tagalog", ""),
+            "zones": c["args"].get("zones", []),
+            "alert_level": c["args"].get("alert_level", "ADVISORY"),
+        }
+        for c in function_call_log
+        if c["function"] == "broadcast_alert"
+    ]
+
+
+def get_routes(function_call_log):
+    return [
+        {
+            "zone": c["args"].get("origin_zone", ""),
+            "destination": c["args"].get("destination", ""),
+            "route": c.get("result", {}).get("route", ""),
+            "distance_km": c.get("result", {}).get("distance_km", ""),
+            "walk_minutes": c.get("result", {}).get("walk_minutes", ""),
+            "status": c.get("result", {}).get("status", ""),
+        }
+        for c in function_call_log
+        if c["function"] == "calculate_safe_route"
+    ]
+
+# ── Session state ─────────────────────────────────────────────────────────────
+
+if "latest_alert" not in st.session_state:
+    st.session_state.latest_alert = None
