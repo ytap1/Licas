@@ -839,3 +839,288 @@ def get_routes(function_call_log):
 
 if "latest_alert" not in st.session_state:
     st.session_state.latest_alert = None
+
+# ── Tabs ──────────────────────────────────────────────────────────────────────
+
+tab1, tab2 = st.tabs(["🧭 Command View — DRRM Officer", "📢 Resident View"])
+
+# =============================================================================
+# TAB 1 — COMMAND VIEW
+# =============================================================================
+
+with tab1:
+    st.title("🌊 LIKAS")
+    st.caption("Local Intelligence for Katastrophe Alert and Safety")
+
+    api_key = get_api_key()
+    if not api_key:
+        st.info(
+            "ℹ️ No API key configured — offline simulation is active. "
+            "Set `GEMINI_API_KEY` in Streamlit secrets to enable live Gemma analysis.",
+            icon="🔑",
+        )
+
+    st.divider()
+
+    # ── Scenario selector ─────────────────────────────────────────────────────
+    selected_label = st.selectbox(
+        "📋 Select Scenario",
+        list(SCENARIOS.keys()),
+        help="Choose a pre-loaded flood scenario to analyze",
+    )
+    scenario = SCENARIOS[selected_label]
+
+    # ── Mode toggle ───────────────────────────────────────────────────────────
+    mode = st.radio(
+        "Mode",
+        ["🌐 Live Mode (Gemma API)", "🔴 Simulate Offline Mode"],
+        index=1 if not scenario.get("internet", True) else 0,
+        horizontal=True,
+        key=f"mode_{selected_label}",
+    )
+    st.caption(
+        "*Offline mode simulates how LIKAS behaves when typhoon knocks out internet "
+        "— Gemma reasoning runs from cached data.*"
+    )
+
+    st.divider()
+
+    # ── Sensor data panel ─────────────────────────────────────────────────────
+    with st.expander("📡 Sensor Data", expanded=True):
+        if "stations" in scenario:
+            st.markdown(f"**Location:** {scenario['barangay']}")
+            st.markdown(f"**Timestamp:** {scenario['timestamp']}")
+            st.metric("Internet Status", "🔴 OFFLINE")
+            if "last_sync" in scenario:
+                st.caption(f"Last sync: {scenario['last_sync']}")
+            st.metric("Total Population at Risk", f"{scenario['total_population']:,}")
+            st.markdown("**Station Readings:**")
+            for s in scenario["stations"]:
+                pct = s["threshold_pct"]
+                badge = "🚨" if pct >= 100 else ("🔴" if pct >= 90 else "🟠")
+                st.metric(
+                    label=f"{badge} {s['barangay']} ({s['id']})",
+                    value=f"{s['water_level_m']}m",
+                    delta=f"{pct}% of threshold — RISING {s['rate_m_per_hr']}m/hr",
+                )
+        else:
+            c1, c2, c3, c4 = st.columns(4)
+            with c1:
+                st.metric(
+                    "Water Level",
+                    f"{scenario['water_level_m']}m",
+                    f"Threshold {scenario['threshold_m']}m ({scenario['threshold_pct']}%)",
+                )
+            with c2:
+                st.metric(
+                    "Rainfall 1hr / 3hr / 6hr",
+                    f"{scenario['rain_1hr']}mm",
+                    f"{scenario['rain_3hr']}mm | {scenario['rain_6hr']}mm",
+                )
+            with c3:
+                st.metric("Trend", scenario["trend"], f"{scenario['rate_m_per_hr']}m/hr")
+            with c4:
+                inet = "🟢 ONLINE" if scenario.get("internet", True) else "🔴 OFFLINE"
+                st.metric("Internet Status", inet)
+
+            if scenario.get("flooded_roads"):
+                st.markdown("**⛔ Known Flooded Roads:**")
+                for road in scenario["flooded_roads"]:
+                    st.markdown(f"- {road}")
+
+    st.divider()
+
+    # ── Photo upload / description ────────────────────────────────────────────
+    if "stations" not in scenario:
+        uploaded = st.file_uploader(
+            "📷 Upload Field Photo (JPG/PNG)",
+            type=["jpg", "jpeg", "png"],
+            help="Upload a photo from the flood site for visual reference",
+        )
+        if uploaded:
+            st.image(
+                Image.open(uploaded),
+                caption="Uploaded field photo",
+                use_container_width=True,
+            )
+
+    photo_description = st.text_area(
+        "Or describe the flood situation manually",
+        value=scenario["photo_description"],
+        height=100,
+        help="This description is sent to Gemma for analysis. Edit to match field observations.",
+    )
+
+    st.divider()
+
+    # ── Analyze button ────────────────────────────────────────────────────────
+    if st.button(
+        "🔍 Analyze Situation & Generate Alert",
+        use_container_width=True,
+        type="primary",
+    ):
+        with st.spinner("Gemma 4 is analyzing the situation..."):
+            try:
+                result = run_analysis(scenario, photo_description, mode, api_key)
+            except requests.exceptions.Timeout:
+                st.error("⏱️ Request timed out. Check connection or switch to Offline mode.")
+                result = None
+            except requests.exceptions.HTTPError as exc:
+                st.error(f"🔴 API error: {exc}. Check GEMINI_API_KEY or switch to Offline mode.")
+                result = None
+            except Exception as exc:
+                st.error(f"🔴 Unexpected error: {exc}")
+                result = None
+
+        if result:
+            log = result.get("function_call_log", [])
+            alert_level = result.get("alert_level") or get_highest_alert(log)
+            messages = get_broadcast_messages(log)
+            routes = get_routes(log)
+
+            # Persist to session state for Resident View
+            if messages:
+                st.session_state.latest_alert = {
+                    "alert_level": alert_level,
+                    "barangay": scenario["barangay"],
+                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                    "messages": messages,
+                    "routes": routes,
+                    "evacuation_centers": scenario.get("evacuation_centers", []),
+                }
+
+            st.success(f"Analysis complete — Mode: {result['mode']}")
+            st.divider()
+
+            # ── Reasoning ─────────────────────────────────────────────────────
+            st.subheader("🧠 Gemma Reasoning")
+            st.info(
+                result.get("reasoning")
+                or "*(Reasoning embedded in function calls — see ⚙️ Functions Called below.)*"
+            )
+
+            # ── Alert level badge ──────────────────────────────────────────────
+            st.subheader("⚠️ Alert Level")
+            emoji = alert_color(alert_level)
+            if alert_level == "CRITICAL":
+                st.error(f"{emoji} **{alert_level}** — Mandatory evacuation required")
+            elif alert_level == "WARNING":
+                st.warning(f"{emoji} **{alert_level}** — Voluntary evacuation in effect")
+            elif alert_level == "WATCH":
+                st.warning(f"{emoji} **{alert_level}** — Prepare to evacuate, stay alert")
+            else:
+                st.info(f"{emoji} **{alert_level}** — Monitor situation")
+
+            # ── Functions called ───────────────────────────────────────────────
+            with st.expander(f"⚙️ Functions Called ({len(log)})"):
+                for i, call in enumerate(log, 1):
+                    st.markdown(f"**{i}. `{call['function']}`**")
+                    col_a, col_b = st.columns(2)
+                    with col_a:
+                        st.markdown("*Arguments*")
+                        st.json(call["args"])
+                    with col_b:
+                        st.markdown("*Result*")
+                        st.json(call["result"])
+                    if i < len(log):
+                        st.divider()
+
+            # ── Alert messages ─────────────────────────────────────────────────
+            if messages:
+                st.subheader("📢 Alert Message")
+                for msg in messages:
+                    zones_str = ", ".join(msg["zones"])
+                    st.markdown(
+                        f"**{alert_color(msg['alert_level'])} {msg['alert_level']} — {zones_str}**"
+                    )
+                    col_en, col_tl = st.columns(2)
+                    with col_en:
+                        st.markdown("🇬🇧 **English**")
+                        st.markdown(msg["english"])
+                    with col_tl:
+                        st.markdown("🇵🇭 **Tagalog**")
+                        st.markdown(msg["tagalog"])
+                    st.divider()
+
+            # ── Evacuation routes ──────────────────────────────────────────────
+            if routes:
+                st.subheader("🗺️ Evacuation Route")
+                for r in routes:
+                    status_icon = "✅" if r["status"] == "CLEAR" else "⚠️"
+                    st.success(
+                        f"**{status_icon} {r['zone']} → {r['destination']}**\n\n"
+                        f"📍 {r['route']}\n\n"
+                        f"📏 {r['distance_km']} km  |  🚶 ~{r['walk_minutes']} min on foot"
+                    )
+
+# =============================================================================
+# TAB 2 — RESIDENT VIEW
+# =============================================================================
+
+with tab2:
+    alert = st.session_state.latest_alert
+
+    if alert is None:
+        st.info("📵 No alert generated yet. Run an analysis in the Command View tab first.")
+        st.markdown("---")
+        st.markdown("### How to generate an alert")
+        st.markdown("1. Go to **🧭 Command View — DRRM Officer**")
+        st.markdown("2. Select a scenario")
+        st.markdown("3. Click **🔍 Analyze Situation & Generate Alert**")
+    else:
+        level = alert["alert_level"]
+        emoji = alert_color(level)
+
+        if level == "CRITICAL":
+            st.error(f"# 🚨 {level}")
+        elif level == "WARNING":
+            st.warning(f"# 🔴 {level}")
+        elif level == "WATCH":
+            st.warning(f"# 🟠 {level}")
+        else:
+            st.info(f"# 🟡 {level}")
+
+        st.markdown(f"### 📍 {alert['barangay']}")
+        st.caption(f"⏱️ {alert['timestamp']}")
+        st.divider()
+
+        # Tagalog instructions — highest-priority message first
+        if alert["messages"]:
+            primary = alert["messages"][0]
+            st.markdown("## 📋 INSTRUCTIONS")
+            st.markdown(f"### {primary['tagalog']}")
+            st.divider()
+
+            for msg in alert["messages"][1:]:
+                zones_str = ", ".join(msg["zones"])
+                st.markdown(f"**{msg['alert_level']} — {zones_str}**")
+                st.markdown(msg["tagalog"])
+                st.divider()
+
+        # Safe route — step-by-step
+        if alert["routes"]:
+            st.markdown("## 🗺️ SAFE ROUTE")
+            for r in alert["routes"]:
+                for i, step in enumerate(r["route"].split(" → "), 1):
+                    st.markdown(f"{i}. **{step}**")
+                st.caption(f"📏 {r['distance_km']} km  |  🚶 ~{r['walk_minutes']} min")
+                st.divider()
+
+        # Evacuation centers
+        centers = alert.get("evacuation_centers", [])
+        if centers:
+            st.markdown("## 📍 EVACUATION CENTER")
+            for center in centers:
+                st.markdown(f"**{center['name']}**")
+                st.markdown(
+                    f"📏 {center['distance_km']} km away  |  👥 Capacity: {center['capacity']}"
+                )
+                st.divider()
+
+        # English version (collapsible)
+        if alert["messages"]:
+            with st.expander("🇬🇧 English Version"):
+                for msg in alert["messages"]:
+                    zones_str = ", ".join(msg["zones"])
+                    st.markdown(f"**{msg['alert_level']} — {zones_str}**")
+                    st.markdown(msg["english"])
